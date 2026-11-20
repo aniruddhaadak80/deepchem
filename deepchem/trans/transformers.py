@@ -995,6 +995,11 @@ class BalancingTransformer(Transformer):
         w_balanced = np.zeros_like(w)
         if len(y.shape) == 1 and len(w.shape) == 2 and w.shape[1] == 1:
             y = np.expand_dims(y, 1)
+        if len(y.shape) == 2 and y.shape[1] == 1 and len(w.shape) == 1:
+            # A single task may be stored with or without its task dimension.
+            # Keeping y 2D here broadcasts the class mask against the 1D
+            # weights into (N, N), which cannot index w_balanced.
+            y = np.reshape(y, -1)
         if len(y.shape) == 1:
             n_tasks = 1
         elif len(y.shape) == 2:

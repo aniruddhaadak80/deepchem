@@ -2,6 +2,7 @@ import itertools
 import tempfile
 
 import numpy as np
+import pytest
 
 import deepchem as dc
 
@@ -71,6 +72,27 @@ def test_binary_singletask():
         # Check that sum of 0s equals sum of 1s in transformed for each task
         assert np.isclose(np.sum(w_task[y_task == 0]),
                           np.sum(w_task[y_task == 1]))
+
+
+
+@pytest.mark.parametrize(
+    ("y_shape", "w_shape"), [((10, 1), (10,)), ((10,), (10, 1))]
+)
+def test_binary_single_task_with_mixed_task_dimensions(y_shape, w_shape):
+    rng = np.random.RandomState(123)
+    y = rng.randint(2, size=y_shape)
+    w = rng.rand(*w_shape)
+    w.reshape(-1)[::5] = 0
+    dataset = dc.data.NumpyDataset(rng.rand(10, 3), y, w)
+
+    transformed = dc.trans.BalancingTransformer(dataset=dataset).transform(dataset)
+
+    labels = np.reshape(transformed.y, -1)
+    weights = np.reshape(transformed.w, -1)
+    assert np.isclose(weights[labels == 0].sum(), weights[labels == 1].sum())
+    np.testing.assert_allclose(
+        weights[np.reshape(w, -1) == 0], np.zeros_like(weights[np.reshape(w, -1) == 0])
+    )
 
 
 def test_binary_multitask():
