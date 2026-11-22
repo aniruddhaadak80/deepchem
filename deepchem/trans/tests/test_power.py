@@ -49,6 +49,38 @@ def test_power_X_transformer():
     np.testing.assert_allclose(np.power(X, 0.5), X_t[:, 4:])
 
 
+def test_power_x_only_transformer_accepts_multitask_labels():
+    rng = np.random.RandomState(123)
+    X = rng.rand(10, 5)
+    y = rng.rand(10, 3)
+    dataset = dc.data.NumpyDataset(X, y)
+
+    transformed = dc.trans.PowerTransformer(transform_X=True,
+                                            transform_y=False,
+                                            powers=[1, 2],
+                                            dataset=dataset).transform(dataset)
+
+    np.testing.assert_allclose(transformed.X[:, :5], X)
+    np.testing.assert_allclose(transformed.X[:, 5:], np.power(X, 2))
+    np.testing.assert_allclose(transformed.y, y)
+
+
+def test_power_x_and_y_transformer_keeps_transformed_features():
+    rng = np.random.RandomState(123)
+    X = rng.rand(10, 5)
+    y = rng.rand(10, 1)
+    dataset = dc.data.NumpyDataset(X, y)
+
+    transformed = dc.trans.PowerTransformer(transform_X=True,
+                                            transform_y=True,
+                                            powers=[1, 2],
+                                            dataset=dataset).transform(dataset)
+
+    np.testing.assert_allclose(transformed.X[:, :5], X)
+    np.testing.assert_allclose(transformed.X[:, 5:], np.power(X, 2))
+    np.testing.assert_allclose(transformed.y, np.hstack([y, np.power(y, 2)]))
+
+
 def test_power_y_transformer():
     """Test Power transformer on Gaussian normal dataset."""
     N = 10

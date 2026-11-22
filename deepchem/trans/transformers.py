@@ -1357,22 +1357,24 @@ class PowerTransformer(Transformer):
         idstrans: np.ndarray
             Transformed array of ids
         """
-        if not (len(y.shape) == 1 or len(y.shape) == 2 and y.shape[1] == 1):
-            raise ValueError("This transform is not defined for multitask y")
-        # THis reshape is safe because of guard above.
-        y = np.reshape(y, (len(y), 1))
+        X_t = X
+        y_t = y
         w_t = w
         n_powers = len(self.powers)
         if self.transform_X:
             X_t = np.power(X, self.powers[0])
             for i in range(1, n_powers):
                 X_t = np.hstack((X_t, np.power(X, self.powers[i])))
-            y_t = y
         if self.transform_y:
+            # Only labels that are actually transformed need to be single-task;
+            # transforming features alone is defined for multitask datasets.
+            if not (len(y.shape) == 1 or len(y.shape) == 2 and y.shape[1] == 1):
+                raise ValueError(
+                    "This transform is not defined for multitask y")
+            y = np.reshape(y, (len(y), 1))
             y_t = np.power(y, self.powers[0])
             for i in range(1, n_powers):
                 y_t = np.hstack((y_t, np.power(y, self.powers[i])))
-            X_t = X
         return (X_t, y_t, w_t, ids)
 
     def untransform(self, z: np.ndarray) -> np.ndarray:
